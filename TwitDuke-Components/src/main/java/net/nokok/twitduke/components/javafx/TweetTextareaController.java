@@ -21,20 +21,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.nokok.twitduke.core.type;
+package net.nokok.twitduke.components.javafx;
 
-/**
- * ラップされる前のオブジェクトが取得できるクラスです。
- *
- * @param <T> getメソッドで返される型
- */
-@FunctionalInterface
-public interface Retrievable<T> {
+import javafx.fxml.FXML;
+import javafx.scene.control.TextArea;
+import net.nokok.twitduke.base.type.Retrievable;
 
-    /**
-     * ラップされる前のオブジェクトを取得します
-     *
-     * @return ラップされる前のオブジェクト
-     */
-    T get();
+public class TweetTextareaController implements Retrievable<String> {
+
+    @FXML
+    private TextArea tweetTexarea;
+
+    @Override
+    public String get() {
+        return tweetTexarea.getText();
+    }
+
+    public int tweetLength() {
+        return tweetTexarea.getText().length();
+    }
 }

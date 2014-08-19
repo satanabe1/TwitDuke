@@ -21,38 +21,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.nokok.twitduke.core.type;
-
-import static java.util.Objects.requireNonNull;
-import net.nokok.twitduke.base.type.Retrievable;
+package net.nokok.twitduke.base.type;
 
 /**
- * ユーザー名をラップするクラスです。
- * ユーザー名はスクリーンネームとは区別されます
+ * ラップされる前のオブジェクトが取得できるクラスです。
+ *
+ * @param <T> getメソッドで返される型
  */
-public class UserName implements Retrievable<String> {
-
-    private final String userName;
+@FunctionalInterface
+public interface Retrievable<T> {
 
     /**
-     * 指定されたテキストでユーザー名を生成します
+     * ラップされる前のオブジェクトを取得します
      *
-     * @param userName ユーザー名を生成するテキスト
-     *
-     * @exception java.lang.NullPointerException     テキストがnull
-     * @exception java.lang.IllegalArgumentException テキストが空の場合
+     * @return ラップされる前のオブジェクト
      */
-    public UserName(String userName) {
-        String name = requireNonNull(userName, "渡されたユーザー名がnullです");
-        if ( name.isEmpty() ) {
-            throw new IllegalArgumentException("空の文字列は渡せません");
-        }
-        this.userName = userName;
-    }
-
-    @Override
-    public String get() {
-        return userName;
-    }
-
+    T get();
 }
