@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright 2014 satanabe1.
+ * Copyright 2014 noko
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,24 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.nokok.twitduke.components.keyevent;
+package net.nokok.twitduke.resources.draft;
 
-import java.util.Objects;
-import javafx.stage.Stage;
+public class DraftIOFactory {
 
-/**
- *
- * @author wtnbsts
- */
-public class ActionRegisterBuilder {
-
-    private final Stage rootNode;
-
-    public ActionRegisterBuilder(final Stage rootNode) {
-        this.rootNode = Objects.requireNonNull(rootNode);
-    }
-
-    public ActionRegister build() {
-        return new JavaFXActionRegister(rootNode);
+    public static DraftIO newInstance() {
+        return new DraftIOLevelDB();
     }
 }

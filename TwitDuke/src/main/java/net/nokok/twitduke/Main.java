@@ -24,15 +24,20 @@
 package net.nokok.twitduke;
 
 import java.io.File;
+import java.net.URL;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Stream;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
+import javafx.scene.control.TextArea;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
 import net.nokok.twitduke.base.exception.ResourceNotFoundException;
 import net.nokok.twitduke.base.io.Paths;
 import net.nokok.twitduke.components.javafx.MainViewController;
+import net.nokok.twitduke.components.javafx.TweetTextareaController;
 import net.nokok.twitduke.components.javafx.TweetTextareaToolbarController;
 import net.nokok.twitduke.components.keyevent.ActionRegister;
 import net.nokok.twitduke.components.keyevent.ActionRegisterBuilder;
@@ -64,29 +69,45 @@ public class Main extends Application {
 
     @Override
     public void start(Stage stage) throws Exception {
-        FXMLLoader mainFxmlLoader = new FXMLLoader(
-                FXMLResources.MAIN_FXML.orElseThrow(() -> new ResourceNotFoundException(FXMLResources.MAIN_FXML_FILE_NAME))
-        );
-        FXMLLoader tweetTextAreaToolbarLoader = new FXMLLoader(
-                FXMLResources.TWEET_TEXTAREA_TOOLBAR.orElseThrow(() -> new ResourceNotFoundException(FXMLResources.TWEET_TEXTAREA_TOOLBAR_FILE_NAME))
-        );
-        FXMLLoader tweetTextAreaLoader = new FXMLLoader(
-                FXMLResources.TWEET_TEXTAREA.orElseThrow(() -> new ResourceNotFoundException(FXMLResources.TWEET_TEXTAREA_FILE_NAME))
-        );
-        Scene main = new Scene(mainFxmlLoader.load());
-        MainViewController controller = mainFxmlLoader.getController();
-        BorderPane borderPane = tweetTextAreaToolbarLoader.load();
-        BorderPane textAreaOnBorderPane = tweetTextAreaLoader.load();
-        controller.setTweetTextAreaToolbar(borderPane);
-        controller.setTweetTextArea(textAreaOnBorderPane);
-        TweetTextareaToolbarController toolbarController = tweetTextAreaToolbarLoader.getController();
+        Stage configuredStage = configureStage(stage);
+        configuredStage.show();
+    }
 
+    private Stage configureStage(Stage stage) throws Exception {
+        FXMLLoader mainFxmlLoader = getLoader(FXMLResources.MAIN_FXML, FXMLResources.MAIN_FXML_FILE_NAME);
+        FXMLLoader tweetTextAreaToolbarLoader = getLoader(FXMLResources.TWEET_TEXTAREA_TOOLBAR, FXMLResources.TWEET_TEXTAREA_TOOLBAR_FILE_NAME);
+        FXMLLoader tweetTextAreaLoader = getLoader(FXMLResources.TWEET_TEXTAREA, FXMLResources.TWEET_TEXTAREA_FILE_NAME);
+        Scene main = new Scene(mainFxmlLoader.load());
+        MainViewController mainController = mainFxmlLoader.getController();
+        BorderPane borderPane = tweetTextAreaToolbarLoader.load();
+        TextArea textArea = tweetTextAreaLoader.load();
+        mainController.setTweetTextAreaToolbar(borderPane);
+        mainController.setTweetTextArea(textArea);
+        TweetTextareaToolbarController toolbarController = tweetTextAreaToolbarLoader.getController();
+        TweetTextareaController tweetTextareaController = tweetTextAreaLoader.getController();
+
+        toolbarController.addTweetTextAreaController(tweetTextareaController);
+        toolbarController.setSaveDraftButtonListener(tweetTextareaController);
+
+        applyKeymap(stage);
+
+        stage.setScene(main);
+        return stage;
+    }
+
+    private void applyKeymap(Stage stage) throws Exception {
+        Objects.requireNonNull(stage, "stageがnull");
         KeyMapStore store = new KeyMapStoreBuilder().build();
         KeyMapSetting setting = store.load(KeyMapResources.DEFAULT_SETTING.get().openStream());
-        ActionRegister register = new ActionRegisterBuilder(main.getRoot()).build();
-        register.registerKeyMap(setting);
-        stage.setScene(main);
-        stage.show();
+        ActionRegister register = new ActionRegisterBuilder(stage).build();
+        register.registerKeyMap(setting, true);
+    }
+
+    private FXMLLoader getLoader(Optional<URL> url, String resourceName) {
+        if ( !url.isPresent() ) {
+            throw new ResourceNotFoundException(resourceName);
+        }
+        return new FXMLLoader(url.get());
     }
 
     /**

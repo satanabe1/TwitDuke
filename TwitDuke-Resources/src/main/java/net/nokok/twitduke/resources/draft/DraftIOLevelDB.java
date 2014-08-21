@@ -21,39 +21,56 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.nokok.twitduke.xsi.shindanmaker;
+package net.nokok.twitduke.resources.draft;
 
-import java.io.FileWriter;
+import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
-import java.util.Properties;
-import net.nokok.twitduke.base.io.PropertyReader;
+import org.iq80.leveldb.DB;
+import org.iq80.leveldb.Options;
+import org.iq80.leveldb.impl.Iq80DBFactory;
+import static org.iq80.leveldb.impl.Iq80DBFactory.bytes;
 
-public class ShindanmakerProperty {
+public class DraftIOLevelDB implements DraftIO {
 
-    private final Properties properties;
+    private final List<String> draftList = new ArrayList<>();
 
-    public ShindanmakerProperty() {
-        Optional<Properties> oProp = new PropertyReader(ShindanmakerConfig.SHINDANMAKER_CONFIG_FILE)
-            .read();
-        if ( oProp.isPresent() ) {
-            this.properties = oProp.get();
-        } else {
-            this.properties = new Properties();
-        }
+    @Override
+    public synchronized List<String> draftList() {
+        return draftList;
     }
 
-    public Optional<String> name() {
-        return Optional.ofNullable(properties.getProperty("name"));
-    }
-
-    public void writeName(String name) {
-        properties.setProperty("name", name);
-        try {
-            properties.store(new FileWriter(ShindanmakerConfig.SHINDANMAKER_CONFIG_FILE), null);
+    @Override
+    public void remove(Integer index) {
+        try (DB db = openDB()) {
+            db.delete(bytes(index.toString()));
+            draftList.remove(index.intValue()); //call remove(int index)
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    @Override
+    public Optional<String> restore(Integer index) {
+        return Optional.of(draftList.get(index));
+    }
+
+    @Override
+    public void saveDraft(String text) {
+        try (DB db = openDB()) {
+            db.put(bytes(String.valueOf(draftList.size())), text.getBytes());
+            draftList.add(text);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    private DB openDB() throws IOException {
+        File dbFile = new File("draft");
+        Options options = new Options().createIfMissing(true);
+        return Iq80DBFactory.factory.open(dbFile, options);
     }
 }

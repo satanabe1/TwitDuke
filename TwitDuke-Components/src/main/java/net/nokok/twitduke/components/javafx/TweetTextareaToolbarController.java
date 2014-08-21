@@ -23,6 +23,7 @@
  */
 package net.nokok.twitduke.components.javafx;
 
+import com.google.common.io.Files;
 import java.awt.AWTException;
 import java.awt.Dimension;
 import java.awt.Point;
@@ -33,64 +34,73 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.Objects;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ToolBar;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javax.imageio.ImageIO;
 import net.nokok.twitduke.base.event.Event;
-import net.nokok.twitduke.base.event.PrimitiveIntegerEventListener;
 import net.nokok.twitduke.base.exception.ResourceNotFoundException;
+import net.nokok.twitduke.base.type.Retrievable;
+import net.nokok.twitduke.base.type.TweetLength;
 import net.nokok.twitduke.resources.FXMLResources;
+import net.nokok.twitduke.resources.ImageResources;
+import net.nokok.twitduke.resources.draft.DraftIO;
+import net.nokok.twitduke.resources.draft.DraftIOFactory;
 
-public class TweetTextareaToolbarController implements ComponentAppendable<Node>, PrimitiveIntegerEventListener {
-
-    @FXML
-    private Button takeScreenshotButton;
+public class TweetTextareaToolbarController implements ComponentAppendable<Node>, Event<TweetLength> {
 
     @FXML
     private Label tweetTextLengthLabel;
 
     @FXML
-    private Button choosePictureButton;
-
-    @FXML
     private ToolBar tweetTextareaToolbar;
 
     @FXML
-    private Button saveDraftButton;
+    private ImageView draftButtonIcon;
 
-    private Event<String> draftReceiver;
+    private Retrievable<String> textAreaStringReceiver;
+
+    private TweetTextareaController tweetTextareaController;
+
+    private final DraftIO draftIO = DraftIOFactory.newInstance();
 
     @Override
     public void addComponent(Node component) {
-
+        tweetTextareaToolbar.getItems().add(component);
     }
 
     @Override
-    public void onEvent(int tweetLength) {
-        tweetTextLengthLabel.setText(String.valueOf(140 - tweetLength));
+    public void onEvent(TweetLength t) {
+        tweetTextLengthLabel.setText(String.valueOf(140 - t.length()));
+        if ( t.isSendable() ) {
+            tweetTextLengthLabel.setStyle("-fx-text-fill: #ecf0f1;"); //default.css normal-text-color
+        } else {
+            tweetTextLengthLabel.setStyle("-fx-text-fill: #c0392b;"); //default.css error-text-color
+        }
     }
 
     @FXML
     void takeScreenshot(ActionEvent event) {
         Stage stage = new Stage(StageStyle.TRANSPARENT);
         FXMLLoader loader = new FXMLLoader(
-                FXMLResources.TAKE_SCREENSHOT.orElseThrow(() -> new ResourceNotFoundException(FXMLResources.TAKE_SCREENSHOT_FILE_NAME))
+            FXMLResources.TAKE_SCREENSHOT.orElseThrow(() -> new ResourceNotFoundException(FXMLResources.TAKE_SCREENSHOT_FILE_NAME))
         );
         BorderPane root = loadPanel(loader);
         ScreenShotAreaSelector controller = loader.getController();
         controller.areaSelected((start, end) -> {
             stage.close();
             BufferedImage image = takeScreenShot(start, end);
-            saveImage("capture.png", image);
+            saveImage("tmp.png", image);
         });
         Dimension screenSize = getScreenSize();
         Scene scene = new Scene(root, screenSize.width, screenSize.height);
@@ -127,20 +137,39 @@ public class TweetTextareaToolbarController implements ComponentAppendable<Node>
 
     @FXML
     void choosePicture(ActionEvent event) {
-
+        Stage stage = new Stage();
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("画像を選択してください");
+        File file = fileChooser.showOpenDialog(stage);
+        try {
+            Files.copy(file, new File("tmp.png"));
+        } catch (IOException ex) {
+            throw new UncheckedIOException(ex);
+        }
     }
 
     @FXML
     void saveDraft(ActionEvent event) {
-
+        String text = textAreaStringReceiver.get();
+        draftIO.saveDraft(text);
+        if ( draftIO.draftList().isEmpty() ) {
+            draftButtonIcon.setImage(ImageResources.DRAFT_EMPTY);
+        } else {
+            draftButtonIcon.setImage(ImageResources.DRAFT_FULL);
+        }
     }
 
-    public void setSaveDraftButtonListener(Event<String> draftReveiver) {
-        this.draftReceiver = draftReveiver;
+    public void setSaveDraftButtonListener(Retrievable<String> textAreaStringReceiver) {
+        this.textAreaStringReceiver = Objects.requireNonNull(textAreaStringReceiver);
     }
 
     private Dimension getScreenSize() {
         return Toolkit.getDefaultToolkit().getScreenSize();
+    }
+
+    public void addTweetTextAreaController(TweetTextareaController controller) {
+        this.tweetTextareaController = Objects.requireNonNull(controller);
+        tweetTextareaController.onInput(this::onEvent);
     }
 
 }

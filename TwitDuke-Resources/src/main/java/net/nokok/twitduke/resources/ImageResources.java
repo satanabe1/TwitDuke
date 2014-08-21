@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright 2014 satanabe1.
+ * Copyright 2014 noko
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,24 +21,24 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.nokok.twitduke.components.keyevent;
+package net.nokok.twitduke.resources;
 
-import java.util.Objects;
-import javafx.stage.Stage;
+import com.google.common.io.Resources;
+import java.io.File;
+import java.net.URISyntaxException;
+import javafx.scene.image.Image;
 
-/**
- *
- * @author wtnbsts
- */
-public class ActionRegisterBuilder {
+public class ImageResources {
 
-    private final Stage rootNode;
+    public static final Image DRAFT_EMPTY = getImage("drawer.png");
+    public static final Image DRAFT_FULL = getImage("drawer2.png");
 
-    public ActionRegisterBuilder(final Stage rootNode) {
-        this.rootNode = Objects.requireNonNull(rootNode);
-    }
-
-    public ActionRegister build() {
-        return new JavaFXActionRegister(rootNode);
+    private static Image getImage(String fileName) {
+        try {
+            String path = Resources.getResource(String.join(File.separator, "img", fileName)).toURI().toString();
+            return new Image(path);
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

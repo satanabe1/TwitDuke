@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright 2014 satanabe1.
+ * Copyright 2014 noko
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,24 +21,45 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.nokok.twitduke.components.keyevent;
+package net.nokok.twitduke.base.type;
 
 import java.util.Objects;
-import javafx.stage.Stage;
 
-/**
- *
- * @author wtnbsts
- */
-public class ActionRegisterBuilder {
+public class TweetLength {
 
-    private final Stage rootNode;
+    private final int length;
 
-    public ActionRegisterBuilder(final Stage rootNode) {
-        this.rootNode = Objects.requireNonNull(rootNode);
+    public TweetLength(int length) {
+        if ( length < 0 ) {
+            throw new IllegalArgumentException("ツイートの長さは正の値でなければなりません:" + length);
+        }
+        this.length = length;
     }
 
-    public ActionRegister build() {
-        return new JavaFXActionRegister(rootNode);
+    public TweetLength(String str) {
+        this(Objects.requireNonNull(str).length());
+    }
+
+    public boolean isSendable() {
+        return length <= 140;
+    }
+
+    public int length() {
+        return length;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return this.hashCode() == Objects.requireNonNull(obj).hashCode();
+    }
+
+    @Override
+    public int hashCode() {
+        return length;
+    }
+
+    @Override
+    public String toString() {
+        return String.valueOf(length);
     }
 }
